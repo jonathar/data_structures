@@ -1,10 +1,11 @@
 # Classic Data Structures
 
-Implemented in C.
+Assorted data structures implemented in C.
 
 ## Available Data Structures
 
  1. Doubly Linked List
+ 2. Vector
 
 ## Developing
 
