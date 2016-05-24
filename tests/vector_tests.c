@@ -90,7 +90,7 @@ char *test_push_pop() {
     mu_assert(*val == i * 333, "Wrong value.");
     VectorFree(val);
   }
-error:
+
   return NULL;
 }
 
