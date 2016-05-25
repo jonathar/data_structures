@@ -6,6 +6,7 @@ Assorted data structures implemented in C.
 
  1. Doubly Linked List
  2. Vector
+ 3. Hashmap
 
 ## Developing
 
