@@ -7,7 +7,7 @@ int default_compare(void *a, void *b) {
 
 uint32_t default_hash(void *a) {
 	size_t len = blength((bstring) a);
-	char *key = bdata((bstring) key);
+	char *key = bdata((bstring) a);
 	uint32_t hash = 0;
 	uint32_t i = 0;
 
@@ -57,22 +57,53 @@ void HashMapDestroy(HashMap *map) {
 	}
 }
 
-static inline HashMapNode *HasMapNodeCreate(int hash, void *key, void *data) {
+static inline HashMapNode *HashMapNodeCreate(int hash, void *key, void *data) {
 	HashMapNode *node = calloc(1, sizeof(HashMapNode));
 	check_mem(node);
 	node->hash = hash;
 	node->key = key;
 	node->data = data;
 
+	return node;
 error:
 	return NULL;
 }
 
 int HashMapSet(HashMap *map, void *key, void *data) {
-  return -1;
+	uint32_t hash = map->hash(key);
+	int bucket_num = hash % map->buckets->end; 
+	check(bucket_num > 0, "Invalid bucket_num found");
+
+	HashMapNode *node = HashMapNodeCreate(hash, key, data);
+
+	Vector *bucket = VectorGet(map->buckets, bucket_num);
+
+	if (bucket == NULL) {
+		Vector *new_bucket = VectorCreate(sizeof(HashMapNode), 1);
+		VectorSet(map->buckets, bucket_num, new_bucket);
+		bucket = new_bucket;
+	}
+
+	VectorPush(bucket, node);
+
+  return 0;
+error:
+	return -1;
 }
 
 void *HashMapGet(HashMap *map, void *key) {
+	uint32_t hash = map->hash(key);
+	int bucket_num = hash % map->buckets->end;
+	check(bucket_num > 0, "Invalid bucket_num found");
+
+	Vector *bucket = VectorGet(map->buckets, bucket_num);
+	for(int i = 0; i < bucket->end; i ++) {
+		HashMapNode *node = VectorGet(bucket, i);
+		if (node->key == key) return node->data;
+	}
+	
+	return NULL;
+error:
   return NULL;
 }
 
@@ -81,5 +112,22 @@ int HashMapTraverse(HashMap *map, HashMapTraverseCB traverse_cb) {
 }
 
 void *HashMapDelete(HashMap *map, void *key) {
-  return NULL;
+
+	uint32_t hash = map->hash(key);
+	int bucket_num = hash % map->buckets->end;
+	check(bucket_num > 0, "Invalid bucket_num found");
+
+	Vector *bucket = VectorGet(map->buckets, bucket_num);
+	for(int i = 0; i < bucket->end; i ++) {
+		HashMapNode *node = VectorGet(bucket, i);
+		if (node->key == key) {
+			void *data = node->data;
+			free(node);
+			HashMapNode *ending = VectorPop(bucket);
+			VectorSet(bucket, i, ending);
+			return data;
+		}
+	}
+error:
+	return NULL;
 }
