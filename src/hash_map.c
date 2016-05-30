@@ -108,7 +108,18 @@ error:
 }
 
 int HashMapTraverse(HashMap *map, HashMapTraverseCB traverse_cb) {
-  return -1;
+  int rc = 0;
+  for (int i = 0; i < map->buckets->end; i++) {
+    Vector *bucket = VectorGet(map->buckets, i);
+    if (bucket) {
+      for (int j = 0; j < bucket->end; j++) {
+	HashMapNode *node = VectorGet(bucket, j);
+	rc = traverse_cb(node);
+	if (rc != 0) return rc;
+      }
+    }
+  }
+  return 0;
 }
 
 void *HashMapDelete(HashMap *map, void *key) {
