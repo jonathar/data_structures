@@ -69,22 +69,30 @@ error:
   return NULL;
 }
 
+static inline Vector *HashMapGetBucket(HashMap *map, uint32_t hash, int create) {
+  int bucket_num = hash % map->buckets->end;
+  check(bucket_num > 0, "Invalid bucket_num found");
+  Vector *bucket = VectorGet(map->buckets, bucket_num);
+
+  if (bucket == NULL && create) {
+    Vector *new_bucket = VectorCreate(sizeof(HashMapNode), 1);
+    VectorSet(map->buckets, bucket_num, new_bucket);
+    bucket = new_bucket;
+  }
+
+  return bucket;
+error:
+  return NULL;
+}
+
 int HashMapSet(HashMap *map, void *key, void *data) {
-	uint32_t hash = map->hash(key);
-	int bucket_num = hash % map->buckets->end; 
-	check(bucket_num > 0, "Invalid bucket_num found");
+  uint32_t hash = map->hash(key);
+  Vector *bucket = HashMapGetBucket(map, hash, 1);
+  check(bucket, "Can't create bucket.");
 
-	HashMapNode *node = HashMapNodeCreate(hash, key, data);
-
-	Vector *bucket = VectorGet(map->buckets, bucket_num);
-
-	if (bucket == NULL) {
-		Vector *new_bucket = VectorCreate(sizeof(HashMapNode), 1);
-		VectorSet(map->buckets, bucket_num, new_bucket);
-		bucket = new_bucket;
-	}
-
-	VectorPush(bucket, node);
+  HashMapNode *node = HashMapNodeCreate(hash, key, data);
+  check(node, "Failed to create node.");
+  VectorPush(bucket, node);
 
   return 0;
 error:
